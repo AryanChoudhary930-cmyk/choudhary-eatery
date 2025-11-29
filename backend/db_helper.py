@@ -2,12 +2,21 @@ import mysql.connector
 
 global cnx
 
+import mysql.connector
+global cnx
+
+# CONNECT TO TIDB CLOUD (Use this for deployment)
 cnx = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="aryan123",
-    database="eatery"
+    host="gateway01.ap-southeast-1.prod.aws.tidbcloud.com",
+    port=4000,
+    user="4TgBvN87GCAUvSB.root",
+    password="8pRDXrkFUQvKpFTC",  # The password you generated earlier
+    database="eatery",
+    ssl_verify_cert=True,
+    ssl_ca="/etc/ssl/certs/ca-certificates.crt"
 )
+
+# ... (keep the rest of your functions exactly the same) ...
 
 
 def get_total_order_price(order_id):
