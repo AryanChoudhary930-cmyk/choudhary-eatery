@@ -1,16 +1,32 @@
 import mysql.connector
 import os
 
-cnx = mysql.connector.connect(
-    host=os.getenv("DB_HOST", "gateway01.ap-southeast-1.prod.aws.tidbcloud.com"),
-    port=4000,
-    user=os.getenv("DB_USER", "4TgBvN87GCAUvSB.root"),
-    password=os.getenv("DB_PASSWORD", "8pRDXrkFUQvKpFTC"),
-    database=os.getenv("DB_NAME", "eatery"),
-    ssl_verify_cert=True,
-    ssl_ca="/etc/ssl/certs/ca-certificates.crt"
-)
+db_host = os.getenv("DB_HOST", "gateway01.ap-southeast-1.prod.aws.tidbcloud.com")
+db_user = os.getenv("DB_USER", "4TgBvN87GCAUvSB.root")
+db_pass = os.getenv("DB_PASSWORD", "8pRDXrkFUQvKpFTC").strip()
+db_name = os.getenv("DB_NAME", "eatery")
 
+print("------------------------------------------------")
+print(f"DEBUG: Connecting to DB Host: {db_host}")
+print(f"DEBUG: Connecting as User: {db_user}")
+print(f"DEBUG: Password Length: {len(db_pass)} characters")
+print("------------------------------------------------")
+
+try:
+    cnx = mysql.connector.connect(
+        host=db_host,
+        port=4000,
+        user=db_user,
+        password=db_pass,
+        database=db_name,
+
+        ssl_verify_cert=False,
+        use_pure=True
+    )
+except mysql.connector.Error as err:
+    print(f"❌ DATABASE CONNECTION ERROR: {err}")
+    # We do not raise the error here to prevent immediate crash,
+    # but subsequent functions will fail if cnx is not defined.
 
 def get_total_order_price(order_id):
     cursor = cnx.cursor()
