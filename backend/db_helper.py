@@ -1,25 +1,25 @@
 import MySQLdb
 import os
 
-# Get credentials
+# 1. Load Credentials
 db_host = os.getenv("DB_HOST", "gateway01.ap-southeast-1.prod.aws.tidbcloud.com")
 db_user = os.getenv("DB_USER", "4TgBvN87GCAUvSB.root")
 db_pass = os.getenv("DB_PASSWORD", "8pRDXrkFUQvKpFTC").strip()
 db_name = os.getenv("DB_NAME", "eatery")
 
+# 2. DEBUGGING: Print what credentials are being used to the logs
+print(f"DEBUG: Connecting to Host: {db_host}")
+print(f"DEBUG: Connecting as User: '{db_user}'")
+print(f"DEBUG: Password: '{db_pass[:2]}...{db_pass[-2:]}' (Length: {len(db_pass)})")
+
 
 def get_db_connection():
-    # Define SSL settings based on the environment
+    # SSL Configuration for Render (Linux) vs Local (Windows)
     ssl_config = {}
-
-    # Check if we are on Render (Linux) where this file exists
     if os.path.exists("/etc/ssl/certs/ca-certificates.crt"):
         ssl_config = {"ca": "/etc/ssl/certs/ca-certificates.crt"}
     else:
-        # Fallback for local Windows (TiDB requires SSL, but might accept default system stores)
-        # If this fails locally, we might need to download a CA cert,
-        # but this logic prioritizes getting the DEPLOYMENT working.
-        ssl_config = None
+        ssl_config = None  # Fallback for local testing
 
     try:
         connection = MySQLdb.connect(
@@ -28,7 +28,7 @@ def get_db_connection():
             passwd=db_pass,
             db=db_name,
             port=4000,
-            ssl=ssl_config  # This forces SSL using the system certificate
+            ssl=ssl_config
         )
         return connection
     except Exception as e:
@@ -41,7 +41,6 @@ cnx = get_db_connection()
 
 
 def get_total_order_price(order_id):
-    # Re-connect if connection was lost (Robustness fix)
     global cnx
     try:
         cnx.ping(True)
@@ -51,7 +50,6 @@ def get_total_order_price(order_id):
     cursor = cnx.cursor()
     query = f"SELECT get_total_order_price({order_id})"
     cursor.execute(query)
-    # MySQLdb returns tuples, so fetchone() returns (price,)
     result = cursor.fetchone()
     cursor.close()
     if result:
@@ -86,7 +84,6 @@ def insert_order_item(food_item, quantity, order_id):
 
     try:
         cursor = cnx.cursor()
-        # MySQLdb syntax for calling procedures
         cursor.callproc('insert_order_item', (food_item, quantity, order_id))
         cnx.commit()
         cursor.close()
