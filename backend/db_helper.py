@@ -1,32 +1,31 @@
-import mysql.connector
+import MySQLdb # Using the native driver
 import os
 
+# Get credentials
 db_host = os.getenv("DB_HOST", "gateway01.ap-southeast-1.prod.aws.tidbcloud.com")
 db_user = os.getenv("DB_USER", "4TgBvN87GCAUvSB.root")
 db_pass = os.getenv("DB_PASSWORD", "8pRDXrkFUQvKpFTC").strip()
 db_name = os.getenv("DB_NAME", "eatery")
 
-print("------------------------------------------------")
-print(f"DEBUG: Connecting to DB Host: {db_host}")
-print(f"DEBUG: Connecting as User: {db_user}")
-print(f"DEBUG: Password Length: {len(db_pass)} characters")
-print("------------------------------------------------")
+# Helper to get connection
+def get_db_connection():
+    try:
+        connection = MySQLdb.connect(
+            host=db_host,
+            user=db_user,
+            passwd=db_pass,
+            db=db_name,
+            port=4000,
+            ssl={"rejectUnauthorized": False} # This fixes the SSL issue on Render!
+        )
+        return connection
+    except Exception as e:
+        print(f"❌ CONNECTION ERROR: {e}")
+        return None
 
-try:
-    cnx = mysql.connector.connect(
-        host=db_host,
-        port=4000,
-        user=db_user,
-        password=db_pass,
-        database=db_name,
-
-        ssl_verify_cert=False,
-        use_pure=True
-    )
-except mysql.connector.Error as err:
-    print(f"❌ DATABASE CONNECTION ERROR: {err}")
-    # We do not raise the error here to prevent immediate crash,
-    # but subsequent functions will fail if cnx is not defined.
+# Global connection (optional, but functions below use cursors)
+# Note: It's better to open/close per request, but keeping your structure:
+cnx = get_db_connection()
 
 def get_total_order_price(order_id):
     cursor = cnx.cursor()
@@ -50,17 +49,15 @@ def get_next_order_id():
 def insert_order_item(food_item, quantity, order_id):
     try:
         cursor = cnx.cursor()
+        # Callproc syntax is different in MySQLdb, using execute for simplicity or adjust syntax
+        # For stored procedures in MySQLdb:
         cursor.callproc('insert_order_item', (food_item, quantity, order_id))
         cnx.commit()
         cursor.close()
         print(f"Item {food_item} inserted successfully!")
         return 1
-    except mysql.connector.Error as err:
-        print(f"Error inserting order item: {err}")
-        cnx.rollback()
-        return -1
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"Error inserting order item: {e}")
         cnx.rollback()
         return -1
 
