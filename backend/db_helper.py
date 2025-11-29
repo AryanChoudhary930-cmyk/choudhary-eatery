@@ -1,15 +1,16 @@
 import mysql.connector
+import os
 
-# CONNECT TO TIDB CLOUD
 cnx = mysql.connector.connect(
-    host="gateway01.ap-southeast-1.prod.aws.tidbcloud.com",
+    host=os.getenv("DB_HOST", "gateway01.ap-southeast-1.prod.aws.tidbcloud.com"),
     port=4000,
-    user="4TgBvN87GCAUvSB.root",
-    password="8pRDXrkFUQvKpFTC",
-    database="eatery",
+    user=os.getenv("DB_USER", "4TgBvN87GCAUvSB.root"),
+    password=os.getenv("DB_PASSWORD", "8pRDXrkFUQvKpFTC"),
+    database=os.getenv("DB_NAME", "eatery"),
     ssl_verify_cert=True,
     ssl_ca="/etc/ssl/certs/ca-certificates.crt"
 )
+
 
 def get_total_order_price(order_id):
     cursor = cnx.cursor()
