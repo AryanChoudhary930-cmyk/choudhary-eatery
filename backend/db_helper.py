@@ -1,23 +1,15 @@
 import mysql.connector
 
-global cnx
-
-import mysql.connector
-global cnx
-
-# CONNECT TO TIDB CLOUD (Use this for deployment)
+# CONNECT TO TIDB CLOUD
 cnx = mysql.connector.connect(
     host="gateway01.ap-southeast-1.prod.aws.tidbcloud.com",
     port=4000,
     user="4TgBvN87GCAUvSB.root",
-    password="8pRDXrkFUQvKpFTC",  # The password you generated earlier
+    password="8pRDXrkFUQvKpFTC",
     database="eatery",
     ssl_verify_cert=True,
     ssl_ca="/etc/ssl/certs/ca-certificates.crt"
 )
-
-# ... (keep the rest of your functions exactly the same) ...
-
 
 def get_total_order_price(order_id):
     cursor = cnx.cursor()
@@ -27,20 +19,16 @@ def get_total_order_price(order_id):
     cursor.close()
     return result
 
-
 def get_next_order_id():
     cursor = cnx.cursor()
     query = "SELECT MAX(order_id) FROM orders"
     cursor.execute(query)
     result = cursor.fetchone()
     cursor.close()
-
-    # CORRECTION: Handle case where table is empty
     if result is None or result[0] is None:
         return 1
     else:
         return result[0] + 1
-
 
 def insert_order_item(food_item, quantity, order_id):
     try:
@@ -59,7 +47,6 @@ def insert_order_item(food_item, quantity, order_id):
         cnx.rollback()
         return -1
 
-
 def insert_order_tracking(order_id, status):
     cursor = cnx.cursor()
     insert_query = "INSERT INTO order_tracking (order_id, status) VALUES (%s, %s)"
@@ -67,14 +54,12 @@ def insert_order_tracking(order_id, status):
     cnx.commit()
     cursor.close()
 
-
 def get_order_status(order_id):
     cursor = cnx.cursor()
     query = "SELECT status FROM order_tracking WHERE order_id = %s"
     cursor.execute(query, (order_id,))
     result = cursor.fetchone()
     cursor.close()
-
     if result:
         return result[0]
     else:
