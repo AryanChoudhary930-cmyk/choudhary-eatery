@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: #FFF7ED;
+  color: #1E293B;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #FFF7ED;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #EA580C;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #F97316;
+}
+
+
+
+/* Dialogflow Messenger Styling */
+df-messenger {
+  --df-messenger-bot-message: #EA580C;
+  --df-messenger-button-titlebar-color: #EA580C;
+  --df-messenger-chat-background-color: #ffffff;
+  --df-messenger-font-color: #1E293B;
+  --df-messenger-send-icon: #EA580C;
+  --df-messenger-user-message: #F97316;
+  --df-messenger-input-box-color: #ffffff;
+  --df-messenger-input-font-color: #1E293B;
+}
+
+/* Blur effects for transitions */
+.backdrop-blur-subtle {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.backdrop-blur-medium {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
