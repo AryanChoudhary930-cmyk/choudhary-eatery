@@ -2,25 +2,23 @@ import MySQLdb
 import os
 
 # 1. Load Credentials from Render Environment
-# If these variables don't exist (like on your laptop), it falls back to the strings in the second argument
 db_host = os.getenv("DB_HOST", "gateway01.ap-southeast-1.prod.aws.tidbcloud.com")
 db_user = os.getenv("DB_USER", "4TgBvN87GCAUvSB.app_user")
-db_pass = os.getenv("DB_PASSWORD", "StrongPass123!").strip()  # .strip() removes accidental spaces
+db_pass = os.getenv("DB_PASSWORD", "StrongPass123!").strip()
 db_name = os.getenv("DB_NAME", "eatery")
 
-# 2. DEBUGGING: Print masked credentials to logs (Safe way to check)
+# 2. DEBUGGING
 print(f"DEBUG: Connecting to Host: {db_host}")
 print(f"DEBUG: Connecting as User: '{db_user}'")
 print(f"DEBUG: Password Length: {len(db_pass)}")
 
 
 def get_db_connection():
-    # SSL Configuration for Render (Linux) vs Local (Windows)
     ssl_config = {}
     if os.path.exists("/etc/ssl/certs/ca-certificates.crt"):
         ssl_config = {"ca": "/etc/ssl/certs/ca-certificates.crt"}
     else:
-        ssl_config = None  # Fallback for local testing
+        ssl_config = None
 
     try:
         connection = MySQLdb.connect(
@@ -86,8 +84,7 @@ def insert_order_item(food_item, quantity, order_id):
     try:
         cursor = cnx.cursor()
 
-        # 1. Get the Item ID and Price directly from Python (No Stored Procedure!)
-        # We assume the food_item name is correct (capitalized)
+        # 1. Get the Item ID and Price
         cursor.execute("SELECT item_id, price FROM food_items WHERE name = %s", (food_item,))
         result = cursor.fetchone()
 
@@ -98,10 +95,10 @@ def insert_order_item(food_item, quantity, order_id):
         item_id = result[0]
         price = result[1]
 
-        # 2. Calculate Total Price in Python
-        total_price = price * quantity
+        # 2. FIX: Convert 'price' to float before multiplying
+        total_price = float(price) * float(quantity)
 
-        # 3. Insert the Order directly
+        # 3. Insert the Order
         insert_query = "INSERT INTO orders (order_id, item_id, quantity, total_price) VALUES (%s, %s, %s, %s)"
         cursor.execute(insert_query, (order_id, item_id, quantity, total_price))
 
