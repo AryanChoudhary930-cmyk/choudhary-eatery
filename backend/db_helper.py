@@ -2,7 +2,7 @@ import MySQLdb
 import os
 
 # 1. Load Credentials
-db_host = os.getenv("DB_HOST", "gateway01.ap-southeast-1.prod.aws.tidbcloud.com")
+db_host = os.getenv("DB_HOST","gateway01.ap-southeast-1.prod.aws.tidbcloud.com")
 db_user = os.getenv("DB_USER", "4TgBvN87GCAUvSB.root")
 db_pass = os.getenv("DB_PASSWORD", "8pRDXrkFUQvKpFTC").strip()
 db_name = os.getenv("DB_NAME", "eatery")
