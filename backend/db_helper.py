@@ -86,16 +86,32 @@ def insert_order_item(food_item, quantity, order_id):
     try:
         cursor = cnx.cursor()
 
-        # FIX: Use cursor.execute() instead of cursor.callproc()
-        # This sends a raw SQL command which works perfectly on TiDB
-        cursor.execute("CALL insert_order_item(%s, %s, %s)", (food_item, quantity, order_id))
+        # 1. Get the Item ID and Price directly from Python (No Stored Procedure!)
+        # We assume the food_item name is correct (capitalized)
+        cursor.execute("SELECT item_id, price FROM food_items WHERE name = %s", (food_item,))
+        result = cursor.fetchone()
+
+        if not result:
+            print(f"❌ Item '{food_item}' not found in database!")
+            return -1
+
+        item_id = result[0]
+        price = result[1]
+
+        # 2. Calculate Total Price in Python
+        total_price = price * quantity
+
+        # 3. Insert the Order directly
+        insert_query = "INSERT INTO orders (order_id, item_id, quantity, total_price) VALUES (%s, %s, %s, %s)"
+        cursor.execute(insert_query, (order_id, item_id, quantity, total_price))
 
         cnx.commit()
         cursor.close()
-        print(f"Item {food_item} inserted successfully!")
+        print(f"✅ Item {food_item} inserted successfully!")
         return 1
+
     except Exception as e:
-        print(f"Error inserting order item: {e}")
+        print(f"❌ Error inserting order item: {e}")
         cnx.rollback()
         return -1
 
