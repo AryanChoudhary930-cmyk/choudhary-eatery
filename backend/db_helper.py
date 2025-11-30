@@ -47,13 +47,19 @@ def get_total_order_price(order_id):
         cnx = get_db_connection()
 
     cursor = cnx.cursor()
-    query = f"SELECT get_total_order_price({order_id})"
-    cursor.execute(query)
+
+    # FIX: Use a raw SQL SELECT SUM() instead of calling a stored function
+    # This works universally on all databases
+    query = "SELECT SUM(total_price) FROM orders WHERE order_id = %s"
+    cursor.execute(query, (order_id,))
+
     result = cursor.fetchone()
     cursor.close()
-    if result:
-        return result[0]
-    return 0
+
+    # Handle case where result is None (e.g. order deleted)
+    if result and result[0]:
+        return float(result[0])  # Convert Decimal to Float
+    return 0.0
 
 
 def get_next_order_id():
