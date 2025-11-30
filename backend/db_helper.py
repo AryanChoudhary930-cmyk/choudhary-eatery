@@ -1,16 +1,17 @@
 import MySQLdb
 import os
 
-# 1. Load Credentials
-db_host = os.getenv("DB_HOST","gateway01.ap-southeast-1.prod.aws.tidbcloud.com")
-db_user = os.getenv("DB_USER", "4TgBvN87GCAUvSB.root")
-db_pass = os.getenv("DB_PASSWORD", "8pRDXrkFUQvKpFTC").strip()
+# 1. Load Credentials from Render Environment
+# If these variables don't exist (like on your laptop), it falls back to the strings in the second argument
+db_host = os.getenv("DB_HOST", "gateway01.ap-southeast-1.prod.aws.tidbcloud.com")
+db_user = os.getenv("DB_USER", "4TgBvN87GCAUvSB.app_user")
+db_pass = os.getenv("DB_PASSWORD", "StrongPass123!").strip()  # .strip() removes accidental spaces
 db_name = os.getenv("DB_NAME", "eatery")
 
-# 2. DEBUGGING: Print what credentials are being used to the logs
+# 2. DEBUGGING: Print masked credentials to logs (Safe way to check)
 print(f"DEBUG: Connecting to Host: {db_host}")
 print(f"DEBUG: Connecting as User: '{db_user}'")
-print(f"DEBUG: Password: '{db_pass[:2]}...{db_pass[-2:]}' (Length: {len(db_pass)})")
+print(f"DEBUG: Password Length: {len(db_pass)}")
 
 
 def get_db_connection():
