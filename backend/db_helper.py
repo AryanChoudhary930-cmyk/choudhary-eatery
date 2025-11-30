@@ -85,7 +85,11 @@ def insert_order_item(food_item, quantity, order_id):
 
     try:
         cursor = cnx.cursor()
-        cursor.callproc('insert_order_item', (food_item, quantity, order_id))
+
+        # FIX: Use cursor.execute() instead of cursor.callproc()
+        # This sends a raw SQL command which works perfectly on TiDB
+        cursor.execute("CALL insert_order_item(%s, %s, %s)", (food_item, quantity, order_id))
+
         cnx.commit()
         cursor.close()
         print(f"Item {food_item} inserted successfully!")
