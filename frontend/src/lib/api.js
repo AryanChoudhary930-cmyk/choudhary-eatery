@@ -1,8 +1,11 @@
 import axios from 'axios';
 
 export const api = axios.create({
-  baseURL: 'http://localhost:8000',
-  timeout: 3000, // 3 second timeout
+  // Point to the live Render Backend
+  baseURL: 'https://choudhary-eatery-backend.onrender.com',
+
+  // INCREASED TIMEOUT: Free Render servers take time to wake up!
+  timeout: 60000, // 60 seconds
   headers: {
     'Content-Type': 'application/json',
   },
@@ -40,4 +43,3 @@ export const getOrderStatus = async (orderId) => {
     throw error;
   }
 };
-
