@@ -21,8 +21,114 @@ app.add_middleware(
 inprogress_orders = {}
 
 
+# --- HEALTH CHECK ENDPOINTS ---
+@app.get("/health")
+async def health_check():
+    """Basic health check to verify the application is running"""
+    return {"status": "healthy", "message": "Application is running"}
+
+
+@app.get("/health/db")
+async def database_health_check():
+    """Check database connection status"""
+    try:
+        if db_helper.cnx is None:
+            db_helper.cnx = db_helper.get_db_connection()
+        
+        if db_helper.cnx is None:
+            return JSONResponse(
+                status_code=503,
+                content={"status": "unhealthy", "message": "Database connection unavailable"}
+            )
+        
+        # Try to ping the database
+        db_helper.cnx.ping(True)
+        return {"status": "healthy", "message": "Database connection is active"}
+    except Exception as e:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "unhealthy", "message": f"Database error: {str(e)}"}
+        )
+
+
+
+# --- API ENDPOINT: GET MENU ---
 # --- API ENDPOINT: GET MENU ---
 @app.get("/menu")
+async def get_menu():
+    """Get all menu items from food_items table for the Frontend Website"""
+    try:
+        # Check if database connection is available
+        if db_helper.cnx is None:
+            print("⚠️ Database connection unavailable, attempting to reconnect...")
+            db_helper.cnx = db_helper.get_db_connection()
+        
+        if db_helper.cnx is None:
+            print("❌ Database still unavailable, returning empty menu")
+            return []
+        
+        # Use standard cursor to fetch data
+        cursor = db_helper.cnx.cursor()
+        query = "SELECT item_id, name, price FROM food_items"
+        cursor.execute(query)
+        data = cursor.fetchall()
+        cursor.close()
+
+        # Convert DB tuples to JSON-friendly list of dictionaries
+        items = []
+        for row in data:
+            items.append({
+                "id": row[0],
+                "name": row[1],
+                # Ensure price is sent as an integer (e.g., 120) not Decimal('120.00')
+                "price": int(float(row[2]))
+            })
+
+        # Static assets mapping for images and categories
+        menu_mapping = {
+            'Pav Bhaji': {'description': 'Spicy mashed vegetables with buttered pav, a Mumbai street food favorite',
+                          'image_url': '/assets/pav_bhaji.png', 'category': 'Lunch'},
+            'Chole Bhature': {'description': 'Spiced chickpeas served with fluffy deep-fried bread',
+                              'image_url': '/assets/chole_bhature.png', 'category': 'Breakfast'},
+            'Pizza': {'description': 'Delicious Italian-style pizza with fresh toppings',
+                      'image_url': '/assets/pizza.png', 'category': 'Lunch'},
+            'Mango Lassi': {'description': 'Refreshing yogurt drink with sweet mango, perfect for hot days',
+                            'image_url': '/assets/mango_lassi.png', 'category': 'Drinks'},
+            'Masala Dosa': {
+                'description': 'Crispy rice crepe filled with spiced potatoes, served with sambar and chutney',
+                'image_url': 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400&h=300&fit=crop&q=80',
+                'category': 'Breakfast'},
+            'Vegetable Biryani': {'description': 'Fragrant basmati rice cooked with aromatic spices and vegetables',
+                                  'image_url': 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=400&h=300&fit=crop&q=80',
+                                  'category': 'Lunch'},
+            'Vada Pav': {'description': 'Mumbai\'s favorite street food - spiced potato fritter in a bun',
+                         'image_url': 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?w=400&h=300&fit=crop&q=80',
+                         'category': 'Snacks'},
+            'Rava Dosa': {'description': 'Crispy semolina crepe, light and golden, served with coconut chutney',
+                          'image_url': 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?w=400&h=300&fit=crop&q=80',
+                          'category': 'Breakfast'},
+            'Samosa': {'description': 'Crispy fried pastry filled with spiced potatoes and peas',
+                       'image_url': 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=400&h=300&fit=crop&q=80',
+                       'category': 'Snacks'},
+        }
+
+        # Merge DB data with static asset data
+        enriched_items = []
+        for item in items:
+            item_name = item['name']
+            if item_name in menu_mapping:
+                item.update(menu_mapping[item_name])
+            enriched_items.append(item)
+
+        return enriched_items
+
+    except Exception as e:
+        print(f"❌ Error fetching menu: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
+
+
 async def get_menu():
     """Get all menu items from food_items table for the Frontend Website"""
     try:

@@ -1,50 +1,89 @@
 import MySQLdb
 import os
+import sys
 
-# 1. Load Credentials from Render Environment
+# 1. Load Credentials from Environment Variables
 db_host = os.getenv("DB_HOST", "gateway01.ap-southeast-1.prod.aws.tidbcloud.com")
 db_user = os.getenv("DB_USER", "4TgBvN87GCAUvSB.app_user")
 db_pass = os.getenv("DB_PASSWORD", "StrongPass123!").strip()
 db_name = os.getenv("DB_NAME", "eatery")
+db_port = int(os.getenv("DB_PORT", "4000"))
 
 # 2. DEBUGGING
-print(f"DEBUG: Connecting to Host: {db_host}")
-print(f"DEBUG: Connecting as User: '{db_user}'")
-print(f"DEBUG: Password Length: {len(db_pass)}")
+print(f"🔍 DEBUG: Connecting to Host: {db_host}")
+print(f"🔍 DEBUG: Connecting as User: '{db_user}'")
+print(f"🔍 DEBUG: Password Length: {len(db_pass)}")
+print(f"🔍 DEBUG: Database Name: {db_name}")
+print(f"🔍 DEBUG: Port: {db_port}")
 
 
 def get_db_connection():
-    ssl_config = {}
-    if os.path.exists("/etc/ssl/certs/ca-certificates.crt"):
-        ssl_config = {"ca": "/etc/ssl/certs/ca-certificates.crt"}
-    else:
-        ssl_config = None
+    """Create and return a database connection with proper SSL handling"""
+    ssl_config = None
+    
+    # Check for SSL certificate in common locations
+    ssl_cert_paths = [
+        "/etc/ssl/certs/ca-certificates.crt",
+        "/etc/pki/tls/certs/ca-bundle.crt",
+        "/etc/ssl/ca-bundle.pem",
+        "/etc/ssl/cert.pem"
+    ]
+    
+    for cert_path in ssl_cert_paths:
+        if os.path.exists(cert_path):
+            ssl_config = {"ca": cert_path}
+            print(f"✅ SSL Certificate found at: {cert_path}")
+            break
+    
+    if ssl_config is None:
+        print("⚠️ No SSL certificate found, attempting connection without SSL verification")
 
     try:
+        print("🔌 Attempting database connection...")
         connection = MySQLdb.connect(
             host=db_host,
             user=db_user,
             passwd=db_pass,
             db=db_name,
-            port=4000,
-            ssl=ssl_config
+            port=db_port,
+            ssl=ssl_config,
+            connect_timeout=10
         )
+        print("✅ Database connection successful!")
         return connection
+    except MySQLdb.Error as e:
+        print(f"❌ MySQL Error during connection: {e}")
+        print(f"   Error Code: {e.args[0] if e.args else 'N/A'}")
+        return None
     except Exception as e:
-        print(f"❌ CONNECTION ERROR: {e}")
+        print(f"❌ Unexpected connection error: {type(e).__name__}: {e}")
         return None
 
 
-# Global connection
-cnx = get_db_connection()
+# Global connection - Don't crash on startup if DB is unavailable
+cnx = None
+try:
+    cnx = get_db_connection()
+    if cnx is None:
+        print("⚠️ WARNING: Initial database connection failed. Will retry on first request.")
+except Exception as e:
+    print(f"⚠️ WARNING: Could not establish initial DB connection: {e}")
+    print("   Application will start, but database operations may fail until connection is established.")
 
 
 def get_total_order_price(order_id):
     global cnx
     try:
-        cnx.ping(True)
+        if cnx is None:
+            cnx = get_db_connection()
+        if cnx:
+            cnx.ping(True)
     except:
         cnx = get_db_connection()
+    
+    if cnx is None:
+        print("❌ Database connection unavailable")
+        return 0.0
 
     cursor = cnx.cursor()
 
@@ -65,9 +104,16 @@ def get_total_order_price(order_id):
 def get_next_order_id():
     global cnx
     try:
-        cnx.ping(True)
+        if cnx is None:
+            cnx = get_db_connection()
+        if cnx:
+            cnx.ping(True)
     except:
         cnx = get_db_connection()
+    
+    if cnx is None:
+        print("❌ Database connection unavailable")
+        return 1
 
     cursor = cnx.cursor()
     query = "SELECT MAX(order_id) FROM orders"
@@ -83,9 +129,16 @@ def get_next_order_id():
 def insert_order_item(food_item, quantity, order_id):
     global cnx
     try:
-        cnx.ping(True)
+        if cnx is None:
+            cnx = get_db_connection()
+        if cnx:
+            cnx.ping(True)
     except:
         cnx = get_db_connection()
+    
+    if cnx is None:
+        print("❌ Database connection unavailable")
+        return -1
 
     try:
         cursor = cnx.cursor()
@@ -122,9 +175,16 @@ def insert_order_item(food_item, quantity, order_id):
 def insert_order_tracking(order_id, status):
     global cnx
     try:
-        cnx.ping(True)
+        if cnx is None:
+            cnx = get_db_connection()
+        if cnx:
+            cnx.ping(True)
     except:
         cnx = get_db_connection()
+    
+    if cnx is None:
+        print("❌ Database connection unavailable")
+        return
 
     cursor = cnx.cursor()
     insert_query = "INSERT INTO order_tracking (order_id, status) VALUES (%s, %s)"
@@ -136,9 +196,16 @@ def insert_order_tracking(order_id, status):
 def get_order_status(order_id):
     global cnx
     try:
-        cnx.ping(True)
+        if cnx is None:
+            cnx = get_db_connection()
+        if cnx:
+            cnx.ping(True)
     except:
         cnx = get_db_connection()
+    
+    if cnx is None:
+        print("❌ Database connection unavailable")
+        return None
 
     cursor = cnx.cursor()
     query = "SELECT status FROM order_tracking WHERE order_id = %s"
